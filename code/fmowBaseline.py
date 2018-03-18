@@ -148,8 +148,8 @@ class FMOWBaseline:
         metadataStats = json.load(open(self.params.files['dataset_stats']))
         trainData = json.load(open(self.params.files['training_struct']))
         testData = json.load(open(self.params.files['test_struct']))
-        #cnnModel = load_model(self.params.files['cnn_model'])
-        cnnModel = get_cnn_model(self.params)
+        cnnModel = load_model(self.params.files['cnn_model'])
+        #cnnModel = get_cnn_model(self.params)
         featuresModel = Model(cnnModel.inputs, cnnModel.layers[-6].output)
         
         allTrainCodes = []
@@ -266,14 +266,14 @@ class FMOWBaseline:
 
     def test_models(self):
 
-        codesTestData = json.load(open(self.params.files['lstm_test_struct']))
+        #codesTestData = json.load(open(self.params.files['lstm_test_struct']))
         metadataStats = json.load(open(self.params.files['dataset_stats']))
     
         metadataMean = np.array(metadataStats['metadata_mean'])
         metadataMax = np.array(metadataStats['metadata_max'])
 
-#        cnnModel = load_model(self.params.files['cnn_model'])
-        cnnModel = get_cnn_model(self.params)
+        cnnModel = load_model(self.params.files['cnn_model'])
+        #cnnModel = get_cnn_model(self.params)
         
         if self.params.test_lstm:
             codesStats = json.load(open(self.params.files['cnn_codes_stats']))
@@ -321,8 +321,8 @@ class FMOWBaseline:
                 metadataFeatures = np.zeros((currBatchSize, self.params.metadata_length))
 
                 codesIndex = 0
-                codesPaths = codesTestData[root[24:]]
-                codesFeatures = []
+                #codesPaths = codesTestData[root[24:]]
+                #codesFeatures = []
                 for ind in inds:
                     img = image.load_img(imgPaths[ind])
                     img = image.img_to_array(img)
@@ -333,7 +333,8 @@ class FMOWBaseline:
                     features = np.divide(features - metadataMean, metadataMax)
                     metadataFeatures[ind,:] = features
                     
-                    codesFeatures.append(json.load(open(codesPaths['cnn_codes_paths'][codesIndex])))
+                    
+  		    #codesFeatures.append(json.load(open(codesPaths['cnn_codes_paths'][codesIndex])))
                     codesIndex += 1
 
                 imgdata = imagenet_utils.preprocess_input(imgdata)
@@ -345,24 +346,24 @@ class FMOWBaseline:
                     else:
                         predictionsCNN = np.sum(cnnModel.predict(imgdata, batch_size=currBatchSize), axis=0)
                 
-                if self.params.test_lstm:
-                    if self.params.use_metadata:
-                        codesMetadata = np.zeros((1, codesStats['max_temporal'], self.params.cnn_lstm_layer_length+self.params.metadata_length))
-                    else:
-                        codesMetadata = np.zeros((1, codesStats['max_temporal'], self.params.cnn_lstm_layer_length))
-
-                    timestamps = []
-                    for codesIndex in range(currBatchSize):
-                        cnnCodes = codesFeatures[codesIndex]
-                        timestamp = (cnnCodes[4]-1970)*525600 + cnnCodes[5]*12*43800 + cnnCodes[6]*31*1440 + cnnCodes[7]*60
-                        timestamps.append(timestamp)
-                        cnnCodes = np.divide(cnnCodes - np.array(codesStats['codes_mean']), np.array(codesStats['codes_max']))
-                        codesMetadata[0,codesIndex,:] = cnnCodes
-                    
-                    sortedInds = sorted(range(len(timestamps)), key=lambda k:timestamps[k])
-                    codesMetadata[0,range(len(sortedInds)),:] = codesMetadata[0,sortedInds,:]
-
-                    predictionsLSTM = lstmModel.predict(codesMetadata, batch_size=1)
+#                if self.params.test_lstm:
+#                    if self.params.use_metadata:
+#                        codesMetadata = np.zeros((1, codesStats['max_temporal'], self.params.cnn_lstm_layer_length+self.params.metadata_length))
+#                    else:
+#                        codesMetadata = np.zeros((1, codesStats['max_temporal'], self.params.cnn_lstm_layer_length))
+#
+#                    timestamps = []
+#                    for codesIndex in range(currBatchSize):
+#                        cnnCodes = codesFeatures[codesIndex]
+#                        timestamp = (cnnCodes[4]-1970)*525600 + cnnCodes[5]*12*43800 + cnnCodes[6]*31*1440 + cnnCodes[7]*60
+#                        timestamps.append(timestamp)
+#                        cnnCodes = np.divide(cnnCodes - np.array(codesStats['codes_mean']), np.array(codesStats['codes_max']))
+#                        codesMetadata[0,codesIndex,:] = cnnCodes
+#                    
+#                    sortedInds = sorted(range(len(timestamps)), key=lambda k:timestamps[k])
+#                    codesMetadata[0,range(len(sortedInds)),:] = codesMetadata[0,sortedInds,:]
+#
+#                    predictionsLSTM = lstmModel.predict(codesMetadata, batch_size=1)
                 
             if len(files) > 0:
                 if self.params.test_cnn:

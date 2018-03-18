@@ -29,7 +29,10 @@ from keras.utils.np_utils import to_categorical
 
 import numpy as np
 
-from .DenseNet import densenet
+import sys  
+import os 
+sys.path.append(os.path.abspath("/home/entropy_tony/workspace/DenseNet"))
+import densenet
 from data_ml_functions.dataFunctions import get_batch_inds
 
 from concurrent.futures import ProcessPoolExecutor
