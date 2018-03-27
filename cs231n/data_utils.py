@@ -103,13 +103,14 @@ def load_fmow(path, dtype=np.float32, subtract_mean=True):
     }
 
 
-def load_mini_fmow(params, dtype=np.float32, subtract_mean=True, batch_size=100, res_ratio=0.1):
+def load_mini_fmow(params, subtract_mean=True, batch_size=100, res_ratio=0.1):
     """
     Load a mini batch of data
     """
     # Load training data, validation data and test data at once
-    X_train = np.zeros((1, 200, 200))
+    X_train = np.zeros((1, 1, 200, 200))
     y_train = np.zeros((1,))
+    dtype=np.float32
     
 #     X_val = []
 #     y_val = []
@@ -306,6 +307,7 @@ def _process_image(image_file, params, metadata_file, X, y, dtype):
         else:
             rbc_category = 2 
        
+        subimg = np.expand_dims(subimg, axis=0)
         subimg = np.expand_dims(subimg, axis=0)
         X = np.concatenate((X, subimg), axis=0)
         y = np.concatenate((y, np.array([rbc_category])), axis=0)

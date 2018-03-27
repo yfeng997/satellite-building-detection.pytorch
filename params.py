@@ -1,13 +1,18 @@
+import torch
 import numpy as np
+
 
 # Project Parameter
 dataset = '/home/feng/data/fMoW-rgb'
-dtype = np.float32
+num_threads = 1
+dtype = torch.FloatTensor
 
 
 # Training Parameters
 batch_size = 100
+num_epochs = 50
 
+learning_rate = 1e-4
 
 # Dataset 
 class_names = [
