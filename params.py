@@ -1,3 +1,20 @@
+import numpy as np
+
+# Project Parameter
+dataset = '/home/feng/data/fMoW-rgb'
+dtype = np.float32
+
+
+# Training Parameters
+batch_size = 100
+
+
+# Dataset 
+class_names = [
+    'false_detection',
+    'residential',
+    'non_residential',
+]
 
 fmow_class_names = [
  'single-unit_residential',
@@ -45,4 +62,13 @@ fmow_class_names = [
  'airport',
  'place_of_worship',
  'race_track',
- 'smokestack']
+ 'smokestack',
+]
+
+
+
+
+
+
+
+

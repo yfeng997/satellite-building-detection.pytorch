@@ -102,10 +102,8 @@ def load_fmow(path, dtype=np.float32, subtract_mean=True):
       'mean_image': mean_image,
     }
 
-    
 
-@profile
-def load_mini_fmow(path, params, dtype=np.float32, subtract_mean=True, batch_size=100, res_ratio=0.1):
+def load_mini_fmow(params, dtype=np.float32, subtract_mean=True, batch_size=100, res_ratio=0.1):
     """
     Load a mini batch of data
     """
@@ -123,7 +121,13 @@ def load_mini_fmow(path, params, dtype=np.float32, subtract_mean=True, batch_siz
     
     # Residential vs. Nonresidential
     res_cat = ['single-unit_residential', 'multi-unit_residential']
-    non_res_cat = ['lake_or_pond','educational_institution','parking_lot_or_garage','military_facility','runway','port',
+    non_res_cat = [
+ 'lake_or_pond',
+ 'educational_institution',
+ 'parking_lot_or_garage',
+ 'military_facility',
+ 'runway',
+ 'port',
  'tower',
  'zoo',
  'aquaculture',
@@ -171,11 +175,13 @@ def load_mini_fmow(path, params, dtype=np.float32, subtract_mean=True, batch_siz
     #print("Batch Counts: ")
     #for k, v in batch_dict.items():
     #    print(k, v)
-    params = vars(params)
-    cat_names = os.listdir(os.path.join(path, 'train'))
-    for cat_name in cat_names:
+    cat_names = os.listdir(os.path.join(params['dataset'], 'train'))
+    for cat_name in tqdm(cat_names):
+        if cat_name in ['port', 'airport', 'impoverished_settlement', 'space_facility']:
+            # Too big to load
+            continue
         print("Extracting images from %s..." % cat_name)
-        X_train, y_train = _process_dir(path, params, cat_name, X_train, y_train, dtype, batch_dict)
+        X_train, y_train = _process_dir(params['dataset'], params, cat_name, X_train, y_train, dtype, batch_dict)
     
     mean_image = np.mean(X_train, axis=0)
     if subtract_mean:
@@ -189,10 +195,9 @@ def load_mini_fmow(path, params, dtype=np.float32, subtract_mean=True, batch_siz
 
 def _process_dir(path, params, cat_name, X, y, dtype, counts):
    
-    for root, dirs, files in tqdm(os.walk(os.path.join(path, 'train', cat_name))):
+    for root, dirs, files in os.walk(os.path.join(path, 'train', cat_name)):
         for file in files:
             if file.endswith('_rgb.json'):
-                print("file: %s opened" % file)
                 metadata = os.path.join(root, file)
                 image = file[:-5] + '.jpg'
                 image = os.path.join(root, image)
@@ -203,7 +208,6 @@ def _process_dir(path, params, cat_name, X, y, dtype, counts):
                 counts[cat_name] = counts[cat_name] - 1     
                 if counts[cat_name] <= 0:
                     return (X, y)
-                print(X.shape, y.shape)
                 break
     return (X, y)            
 
