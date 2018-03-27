@@ -7,7 +7,10 @@ import os
 from scipy.misc import imread
 import platform
 from tqdm import tqdm_notebook as tqdm
+import simplejson as json
 import cv2
+import re
+from memory_profiler import profile
 
 def load_fmow(path, dtype=np.float32, subtract_mean=True):
     """
@@ -99,20 +102,112 @@ def load_fmow(path, dtype=np.float32, subtract_mean=True):
       'mean_image': mean_image,
     }
 
+    
 
-def sample_mini_batch(X, y, batch_size=3):
+@profile
+def load_mini_fmow(path, params, dtype=np.float32, subtract_mean=True, batch_size=100, res_ratio=0.1):
     """
-    Load a mini batch of data with labels
+    Load a mini batch of data
     """
-    N = X.shape[0]
-    indices = np.random.randint(N, size=(batch_size))
-    X_mini = X[indices, :, :, :]
-    y_mini = y[indices, :, :, :]
+    # Load training data, validation data and test data at once
+    X_train = np.zeros((1, 200, 200))
+    y_train = np.zeros((1,))
+    
+#     X_val = []
+#     y_val = []
+#     X_test = []
+#     y_test = []
+#     Xs = [X_train, X_val, X_test]
+#     ys = [y_train, y_val, y_test]
+#     dirnames = ['train','val','test']
+    
+    # Residential vs. Nonresidential
+    res_cat = ['single-unit_residential', 'multi-unit_residential']
+    non_res_cat = ['lake_or_pond','educational_institution','parking_lot_or_garage','military_facility','runway','port',
+ 'tower',
+ 'zoo',
+ 'aquaculture',
+ 'barn',
+ 'border_checkpoint',
+ 'dam',
+ 'tunnel_opening',
+ 'recreational_facility',
+ 'hospital',
+ 'police_station',
+ 'electric_substation',
+ 'railway_bridge',
+ 'fire_station',
+ 'swimming_pool',
+ 'lighthouse',
+ 'waste_disposal',
+ 'airport_hangar',
+ 'road_bridge',
+ 'toll_booth',
+ 'car_dealership',
+ 'office_building',
+ 'impoverished_settlement',
+ 'surface_mine',
+ 'crop_field',
+ 'fountain',
+ 'solar_farm',
+ 'prison',
+ 'ground_transportation_station',
+ 'factory_or_powerplant',
+ 'wind_farm',
+ 'storage_tank',
+ 'golf_course',
+ 'construction_site',
+ 'space_facility',
+ 'airport',
+ 'place_of_worship',
+ 'race_track',
+ 'smokestack']
+    
+    batch_dict = {}
+    for no_res in non_res_cat:
+        batch_dict[no_res] = int(batch_size*(1-res_ratio)/len(non_res_cat))
+    for res in res_cat:
+        batch_dict[res] = int(batch_size*res_ratio/len(res_cat))
+    #print("Batch Counts: ")
+    #for k, v in batch_dict.items():
+    #    print(k, v)
+    params = vars(params)
+    cat_names = os.listdir(os.path.join(path, 'train'))
+    for cat_name in cat_names:
+        print("Extracting images from %s..." % cat_name)
+        X_train, y_train = _process_dir(path, params, cat_name, X_train, y_train, dtype, batch_dict)
+    
+    mean_image = np.mean(X_train, axis=0)
+    if subtract_mean:
+        X_train = X_train - mean_image
+        
+    return {
+      'X_train': X_train,
+      'y_train': y_train,
+    }
 
-    return X_mini, y_mini 
 
+def _process_dir(path, params, cat_name, X, y, dtype, counts):
+   
+    for root, dirs, files in tqdm(os.walk(os.path.join(path, 'train', cat_name))):
+        for file in files:
+            if file.endswith('_rgb.json'):
+                print("file: %s opened" % file)
+                metadata = os.path.join(root, file)
+                image = file[:-5] + '.jpg'
+                image = os.path.join(root, image)
+                if not os.path.isfile(image):
+                    continue
+                # Populate the X_train and y_train with image and metadata file
+                X, y = _process_image(image,params, metadata, X, y, dtype)
+                counts[cat_name] = counts[cat_name] - 1     
+                if counts[cat_name] <= 0:
+                    return (X, y)
+                print(X.shape, y.shape)
+                break
+    return (X, y)            
 
-def _process_image(image_file, metadata_file, X, y, dtype):
+def _process_image(image_file, params, metadata_file, X, y, dtype):
     """
     Private function to populate X_train and y_train based on image and metadata.
     Need to crop the image by bounding boxes given in metadata. 
@@ -124,20 +219,23 @@ def _process_image(image_file, metadata_file, X, y, dtype):
     - y: (N, ) array of image labels. If category is not given in metadata, pass
     - dtype: numpy datatype used to load the image
     """
+       
     # Try acquiring the image and metadata json file
     try:
-        image = cv2.imread(image_file).astype(dtype)
-        metadata = json.load(open(metadata_file))
-    except:
-        return
+        image = cv2.imread(image_file, 0).astype(dtype)
+        m = open(metadata_file)
+        metadata = json.load(m)
+        m.close()
+    except Exception as e:
+        print("Exception: %s" % e)
+        return (X, y)
     
     # Turn metadata['bounding_boxes'] into a list if it is not already
     if not isinstance(metadata['bounding_boxes'], list):
         metadata['bounding_boxes'] = [metadata['bounding_boxes']]
-        
     for bb in metadata['bounding_boxes']:
         # box: [x, y, width, height]
-        box = bb['bounding_boxes']
+        box = bb['box']
         # skip tiny box
         if box[2] <= 2 or box[3] <= 2:
             continue
@@ -183,18 +281,18 @@ def _process_image(image_file, metadata_file, X, y, dtype):
 
         if r1 < 0:
             r1 = 0
-        if r2 > img.shape[0]:
-            r2 = img.shape[0]
+        if r2 > image.shape[0]:
+            r2 = image.shape[0]
         if c1 < 0:
             c1 = 0
-        if c2 > img.shape[1]:
-            c2 = img.shape[1]
+        if c2 > image.shape[1]:
+            c2 = image.shape[1]
 
         if r2-r1 <= 5 or c2-c1 <= 5:
             continue
 
-        subimg = image[r1:r2, c1:c2, :]
-        subimg = cv2.resize(subimg, params['target_img_size']) #.astype(np.uint8)
+        subimg = image[r1:r2, c1:c2]
+        subimg = cv2.resize(subimg, (200, 200)).astype(np.uint8)
         
         fmow_category = params['fmow_class_names'].index(bb['category'])
         if fmow_category in [30, 48]:
@@ -203,9 +301,11 @@ def _process_image(image_file, metadata_file, X, y, dtype):
             rbc_category = 0
         else:
             rbc_category = 2 
-        X.append(subimg)
-        y.append(rbc_category)
-    
+       
+        subimg = np.expand_dims(subimg, axis=0)
+        X = np.concatenate((X, subimg), axis=0)
+        y = np.concatenate((y, np.array([rbc_category])), axis=0)
+    return (X, y)
     
 
 

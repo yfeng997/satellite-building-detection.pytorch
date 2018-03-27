@@ -1,9 +1,11 @@
 import torch 
 import torch.nn as nn
 import torchvision.datasets as dsets
+import mnist
 import torchvision.transforms as transforms
 from torch.autograd import Variable
 
+torch.set_num_threads(1)
 
 # Hyper Parameters
 num_epochs = 5
@@ -11,12 +13,12 @@ batch_size = 100
 learning_rate = 0.001
 
 # MNIST Dataset
-train_dataset = dsets.MNIST(root='./data/',
+train_dataset = mnist.MNIST(root='./data/',
                             train=True, 
                             transform=transforms.ToTensor(),
                             download=True)
 
-test_dataset = dsets.MNIST(root='./data/',
+test_dataset = mnist.MNIST(root='./data/',
                            train=False, 
                            transform=transforms.ToTensor())
 
@@ -64,12 +66,15 @@ for epoch in range(num_epochs):
     for i, (images, labels) in enumerate(train_loader):
         images = Variable(images)
         labels = Variable(labels)
-        
         # Forward + Backward + Optimize
         optimizer.zero_grad()
+        print('1')
         outputs = cnn(images)
+        print('2')
         loss = criterion(outputs, labels)
+        print('3')
         loss.backward()
+        print('4')
         optimizer.step()
         
         if (i+1) % 100 == 0:
