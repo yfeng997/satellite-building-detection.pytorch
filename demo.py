@@ -5,8 +5,12 @@ import mnist
 import torchvision.transforms as transforms
 from torch.autograd import Variable
 
-torch.set_num_threads(1)
+import resource
 
+torch.set_num_threads(1)
+print(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+print('RSS limit')
+print(resource.getrlimit(resource.RLIMIT_RSS))
 # Hyper Parameters
 num_epochs = 5
 batch_size = 100
@@ -68,14 +72,19 @@ for epoch in range(num_epochs):
         labels = Variable(labels)
         # Forward + Backward + Optimize
         optimizer.zero_grad()
+        print(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
         print('1')
         outputs = cnn(images)
+        print(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
         print('2')
         loss = criterion(outputs, labels)
+        print(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
         print('3')
         loss.backward()
+        print(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
         print('4')
         optimizer.step()
+        print(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
         
         if (i+1) % 100 == 0:
             print ('Epoch [%d/%d], Iter [%d/%d] Loss: %.4f' 
