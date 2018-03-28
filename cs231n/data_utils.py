@@ -10,7 +10,7 @@ from tqdm import tqdm_notebook as tqdm
 import simplejson as json
 import cv2
 import re
-from memory_profiler import profile
+import math
 
 def load_fmow(path, dtype=np.float32, subtract_mean=True):
     """
@@ -103,100 +103,95 @@ def load_fmow(path, dtype=np.float32, subtract_mean=True):
     }
 
 
-def load_mini_fmow(params, subtract_mean=True, batch_size=100, res_ratio=0.1):
+def load_mini_fmow(params, subtract_mean=True, batch_size=1000):
     """
-    Load a mini batch of data
+    Load a mini batch of Functional Map of World from the Training dataset. 
+    Training: 80%
+    Validation: 10%
+    Test: 10%
+    
+    Inputs:
+    - params: dict containing key parameters of the project
+    - subtract_mean: boolean indicating whether to subtract the mean training image
+    - batch_size: total number images to load
+    
+    Returns: A dictionary with the following entries
+    - X_train: (batch_size*0.8, 3, 200, 200) array of training images
+    - y_train: (batch_size*0.8, ) array of training labels
+    - X_val: (batch_size*0.1, 3, 200, 200) array of validation images
+    - y_val: (batch_size*0.1, ) array of validation labels
+    - X_test: (batch_size*0.1, 3, 200, 200) array of test images
+    - y_test: (batch_size*0.1, ) array of test labels; if not available, then 
+      y_test will be None
     """
+    # Trick to make sure enough data to satisfy batch_size
+    load_size = int(batch_size*1.3)
+    
     # Load training data, validation data and test data at once
-    X_train = np.zeros((1, 1, 200, 200))
-    y_train = np.zeros((1,))
-    dtype=np.float32
-    
-#     X_val = []
-#     y_val = []
-#     X_test = []
-#     y_test = []
-#     Xs = [X_train, X_val, X_test]
-#     ys = [y_train, y_val, y_test]
-#     dirnames = ['train','val','test']
-    
-    # Residential vs. Nonresidential
-    res_cat = ['single-unit_residential', 'multi-unit_residential']
-    non_res_cat = [
- 'lake_or_pond',
- 'educational_institution',
- 'parking_lot_or_garage',
- 'military_facility',
- 'runway',
- 'port',
- 'tower',
- 'zoo',
- 'aquaculture',
- 'barn',
- 'border_checkpoint',
- 'dam',
- 'tunnel_opening',
- 'recreational_facility',
- 'hospital',
- 'police_station',
- 'electric_substation',
- 'railway_bridge',
- 'fire_station',
- 'swimming_pool',
- 'lighthouse',
- 'waste_disposal',
- 'airport_hangar',
- 'road_bridge',
- 'toll_booth',
- 'car_dealership',
- 'office_building',
- 'impoverished_settlement',
- 'surface_mine',
- 'crop_field',
- 'fountain',
- 'solar_farm',
- 'prison',
- 'ground_transportation_station',
- 'factory_or_powerplant',
- 'wind_farm',
- 'storage_tank',
- 'golf_course',
- 'construction_site',
- 'space_facility',
- 'airport',
- 'place_of_worship',
- 'race_track',
- 'smokestack']
+    X_load = np.array([], dtype=np.float32).reshape(0, 1, 200, 200)
+    y_load = np.array([], dtype=np.int32).reshape(0, )
     
     batch_dict = {}
-    for no_res in non_res_cat:
-        batch_dict[no_res] = int(batch_size*(1-res_ratio)/len(non_res_cat))
-    for res in res_cat:
-        batch_dict[res] = int(batch_size*res_ratio/len(res_cat))
-    #print("Batch Counts: ")
-    #for k, v in batch_dict.items():
-    #    print(k, v)
-    cat_names = os.listdir(os.path.join(params['dataset'], 'train'))
-    for cat_name in tqdm(cat_names):
-        if cat_name in ['port', 'airport', 'impoverished_settlement', 'space_facility']:
-            # Too big to load
-            continue
+    res_ratio = 0.5
+    for cat in params['fmow_class_names_mini']:
+        if cat in ['multi-unit_residential', 'single-unit_residential']:
+            batch_dict[cat] = int(load_size*res_ratio/2)
+        else:
+            batch_dict[cat] = int(load_size*(1-res_ratio)/(len(params['fmow_class_names_mini'])-2))
+    
+#     print("Batch Counts: ")
+#     for k, v in batch_dict.items():
+#         print(k, v)
+    
+    for cat_name in tqdm(params['fmow_class_names_mini']):
         print("Extracting images from %s..." % cat_name)
-        X_train, y_train = _process_dir(params['dataset'], params, cat_name, X_train, y_train, dtype, batch_dict)
+        X_load, y_load = _process_dir(params, cat_name, X_load, y_load, batch_dict)
+    
+    X_load = X_load.astype(np.float32)
+    y_load = y_load.astype(np.int32)
+    
+    indices = np.random.choice(X_load.shape[0], batch_size, replace=False)
+    
+    X_train = X_load[indices[:int(batch_size*0.8)], :, :, :]
+    y_train = y_load[indices[:int(batch_size*0.8)], ]
+    X_val = X_load[indices[int(batch_size*0.8):int(batch_size*0.9)], :, :, :]
+    y_val = y_load[indices[int(batch_size*0.8):int(batch_size*0.9)], ]
+    X_test = X_load[indices[int(batch_size*0.9):batch_size], :, :, :]
+    y_test = y_load[indices[int(batch_size*0.9):batch_size], ]
     
     mean_image = np.mean(X_train, axis=0)
     if subtract_mean:
         X_train = X_train - mean_image
-        
+        X_val = X_val - mean_image
+        X_test = X_test - mean_image
+    
     return {
       'X_train': X_train,
       'y_train': y_train,
+      'X_val': X_val,
+      'y_val': y_val,
+      'X_test': X_test,
+      'y_test': y_test,
     }
 
 
-def _process_dir(path, params, cat_name, X, y, dtype, counts):
-   
-    for root, dirs, files in os.walk(os.path.join(path, 'train', cat_name)):
+def _process_dir(params, category, X, y, counts):
+    '''
+    Load images and labels from 'category' directory
+    
+    Inputs:
+    - paras: dict of key parameters of project
+    - cat_name: class name to be processed
+    - X: (M, 3, 200, 200) of images
+    - y: (M, ) of labels
+    - counts: dict specifying maximum number of images for each category
+    
+    Returns:
+    - X: (M+k, 3, 200, 200) of images
+    - y: (M+k, ) of labels
+    '''
+    path = params['dataset']
+    for root, dirs, files in os.walk(os.path.join(path, 'train', category)):
         for file in files:
             if file.endswith('_rgb.json'):
                 metadata = os.path.join(root, file)
@@ -205,14 +200,13 @@ def _process_dir(path, params, cat_name, X, y, dtype, counts):
                 if not os.path.isfile(image):
                     continue
                 # Populate the X_train and y_train with image and metadata file
-                X, y = _process_image(image,params, metadata, X, y, dtype)
-                counts[cat_name] = counts[cat_name] - 1     
-                if counts[cat_name] <= 0:
+                X, y = _process_image(params, image, metadata, X, y)
+                counts[category] = counts[category] - 1     
+                if counts[category] <= 0:
                     return (X, y)
-                break
     return (X, y)            
 
-def _process_image(image_file, params, metadata_file, X, y, dtype):
+def _process_image(params, image_file, metadata_file, X, y):
     """
     Private function to populate X_train and y_train based on image and metadata.
     Need to crop the image by bounding boxes given in metadata. 
@@ -222,12 +216,11 @@ def _process_image(image_file, params, metadata_file, X, y, dtype):
     - metadata: JSON file that specifies detailed information regarding image
     - X: (N, 3, 200, 200) array of images
     - y: (N, ) array of image labels. If category is not given in metadata, pass
-    - dtype: numpy datatype used to load the image
     """
        
     # Try acquiring the image and metadata json file
     try:
-        image = cv2.imread(image_file, 0).astype(dtype)
+        image = cv2.imread(image_file, 0).astype(np.float32)
         m = open(metadata_file)
         metadata = json.load(m)
         m.close()
@@ -314,6 +307,8 @@ def _process_image(image_file, params, metadata_file, X, y, dtype):
     return (X, y)
     
 
+    
+    
 
 # Below are functions defined for Stanford CS231n. Take them as needed.
 
