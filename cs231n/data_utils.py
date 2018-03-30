@@ -11,8 +11,9 @@ import simplejson as json
 import cv2
 import re
 import math
+import sys
 
-def load_fmow(path, dtype=np.float32, subtract_mean=True):
+def load_fmow(path, dtype=np.float32, subtract_mean=True, load_train=True, load_test=True):
     """
     Load Functional Map of World. Each of fMoW training set and validation
     set has the same directory structure, so this could be used to load any
@@ -61,37 +62,43 @@ def load_fmow(path, dtype=np.float32, subtract_mean=True):
       y_test will be None
     - mean_image: (3, 200, 200) giving mean training image
     """
-    
+        
     # Load training data, validation data and test data at once
-    X_train = []
-    y_train = []
-    X_val = []
-    y_val = []
-    X_test = []
-    y_test = []
-    Xs = [X_train, X_val, X_test]
-    ys = [y_train, y_val, y_test]
-    dirnames = ['train','val','test']
+    X_train = np.array([], dtype=np.float32).reshape(0, 1, 200, 200)
+    y_train = np.array([], dtype=np.int32).reshape(0, )
+    X_test = np.array([], dtype=np.float32).reshape(0, 1, 200, 200)
+    y_test = np.array([], dtype=np.int32).reshape(0, )
     
-    index = 0
-    for index in range(3):
-        for root, dirs, files in tqdm(os.walk(os.path.join(path, dirnames[index]))):
-            for file in files:
-                if file.endswith('_rgb.json'):
-                    metadata = os.path.join(root, file)
-                    image = file[:-5] + '.jpg'
-                    image = os.path.join(root, image)
-                    if not os.path.isfile(image):
-                        continue
-                    # Populate the X_train and y_train with image and metadata file
-                    _process_image(image, metadata, Xs[index], ys[index], dtype)
-                    
-    mean_image = np.mean(X_train, axis=0)
-    if subtract_mean:
+    counts = {}
+    if load_train:
+        print("Extracting Training and Validation Images...")
+        for category in tqdm(params['fmow_class_names_mini']):
+            print("Extracting images from %s..." % category)
+            path = os.path.join(params['dataset'], 'train', category)
+            counts[cat_name] = sys.maxsize
+            X_train, y_train = _process_dir(params, path, category, X_load, y_load, counts)
+        X_train = X_train.astype(np.float32)
+        y_train = y_train.astype(np.int32)
+        X_val = X_train[X_train.shape[0]*0.9:, :, :, :]
+        y_val = y_train[X_train.shape[0]*0.9:, ]
+        X_train = X_train[:X_train.shape[0]*0.9, :, :, :]
+        y_train = y_train[:X_train.shape[0]*0.9, ]
+        mean_image = np.mean(X_train, axis=0)
+    
+    if load_test:
+        print("Extracting Test Images...")
+        counts[""] = sys.maxsize
+        path = os.path.join(params['dataset'], 'test')
+        X_test, y_test = _process_fir(params, path, "", X_test, y_test, counts)  
+        X_test = X_test.astype(np.float32)
+        y_test = y_test.astype(np.int32)
+        
+    if subtract_mean & load_train:
         X_train = X_train - mean_image
         X_val = X_val - mean_image
-        X_test = X_test - mean_image
-        
+        if load_test:
+            X_test = X_test - mean_image
+    
     return {
       'X_train': X_train,
       'y_train': y_train,
@@ -106,8 +113,8 @@ def load_fmow(path, dtype=np.float32, subtract_mean=True):
 def load_mini_fmow(params, subtract_mean=True, batch_size=1000):
     """
     Load a mini batch of Functional Map of World from the Training dataset. 
-    Training: 80%
-    Validation: 10%
+    Training: 80% 
+    Validation: 10% 
     Test: 10%
     
     Inputs:
@@ -133,19 +140,20 @@ def load_mini_fmow(params, subtract_mean=True, batch_size=1000):
     
     batch_dict = {}
     res_ratio = 0.5
-    for cat in params['fmow_class_names_mini']:
-        if cat in ['multi-unit_residential', 'single-unit_residential']:
-            batch_dict[cat] = int(load_size*res_ratio/2)
+    for category in params['fmow_class_names_mini']:
+        if category in ['multi-unit_residential', 'single-unit_residential']:
+            batch_dict[category] = int(load_size*res_ratio/2)
         else:
-            batch_dict[cat] = int(load_size*(1-res_ratio)/(len(params['fmow_class_names_mini'])-2))
+            batch_dict[category] = int(load_size*(1-res_ratio)/(len(params['fmow_class_names_mini'])-2))
     
 #     print("Batch Counts: ")
 #     for k, v in batch_dict.items():
 #         print(k, v)
     
-    for cat_name in tqdm(params['fmow_class_names_mini']):
-        print("Extracting images from %s..." % cat_name)
-        X_load, y_load = _process_dir(params, cat_name, X_load, y_load, batch_dict)
+    for category in tqdm(params['fmow_class_names_mini']):
+        print("Extracting images from %s..." % category)
+        path = os.path.join(params['dataset'], 'train', category)
+        X_load, y_load = _process_dir(params, path, category, X_load, y_load, batch_dict)
     
     X_load = X_load.astype(np.float32)
     y_load = y_load.astype(np.int32)
@@ -172,16 +180,36 @@ def load_mini_fmow(params, subtract_mean=True, batch_size=1000):
       'y_val': y_val,
       'X_test': X_test,
       'y_test': y_test,
+      'mean_image': mean_image,
     }
 
+def load_test(params, mean_image):
+    X_test = np.array([], dtype=np.float32).reshape(0, 1, 200, 200)
+    y_test = np.array([], dtype=np.int32).reshape(0, )
+    
+    print("Extracting Test Images...")
+    
+    path = os.path.join(params['dataset'], 'test')
+    counts = {}
+    counts[""] = sys.maxsize
+    X_test, y_test = _process_dir(params, path, "", X_test, y_test, counts)  
+    X_test = X_test.astype(np.float32)
+    y_test = y_test.astype(np.int32)
+    if mean_image != None:
+        X_test = X_test - mean_image
+        
+    return {
+      'X_test': X_test,
+      'y_test': y_test,
+    }
 
-def _process_dir(params, category, X, y, counts):
+def _process_dir(params, path, category, X, y, counts):
     '''
     Load images and labels from 'category' directory
     
     Inputs:
     - paras: dict of key parameters of project
-    - cat_name: class name to be processed
+    - category: class name to be processed
     - X: (M, 3, 200, 200) of images
     - y: (M, ) of labels
     - counts: dict specifying maximum number of images for each category
@@ -190,8 +218,8 @@ def _process_dir(params, category, X, y, counts):
     - X: (M+k, 3, 200, 200) of images
     - y: (M+k, ) of labels
     '''
-    path = params['dataset']
-    for root, dirs, files in os.walk(os.path.join(path, 'train', category)):
+    
+    for root, dirs, files in os.walk(path):
         for file in files:
             if file.endswith('_rgb.json'):
                 metadata = os.path.join(root, file)
@@ -292,13 +320,16 @@ def _process_image(params, image_file, metadata_file, X, y):
         subimg = image[r1:r2, c1:c2]
         subimg = cv2.resize(subimg, (200, 200)).astype(np.uint8)
         
-        fmow_category = params['fmow_class_names'].index(bb['category'])
-        if fmow_category in [30, 48]:
-            rbc_category = 1
-        elif fmow_category == 0:
-            rbc_category = 0
+        if 'category' not in bb:
+            rbc_category = -1
         else:
-            rbc_category = 2 
+            fmow_category = params['fmow_class_names'].index(bb['category'])
+            if fmow_category in [30, 48]:
+                rbc_category = 1
+            elif fmow_category == 0:
+                rbc_category = 0
+            else:
+                rbc_category = 2 
        
         subimg = np.expand_dims(subimg, axis=0)
         subimg = np.expand_dims(subimg, axis=0)

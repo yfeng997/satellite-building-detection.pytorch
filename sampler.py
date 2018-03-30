@@ -1,3 +1,4 @@
+import torch
 from torch.utils.data import sampler
 
 class RandomSampler(sampler.Sampler):
