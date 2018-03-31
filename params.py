@@ -3,8 +3,8 @@ import numpy as np
 
 
 # Project Parameter
-# dataset = '/home/feng/data/fMoW-rgb'
-dataset = '/Users/Feng/Desktop/CV/data/fmow'
+dataset = '/home/feng/ext2/data/fmow'          # Qiang's Server
+# dataset = '/Users/Feng/Desktop/CV/data/fmow' # Feng's Mac
 num_threads = 1
 dtype = torch.FloatTensor
 

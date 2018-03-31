@@ -195,7 +195,7 @@ def load_test(params, mean_image):
     X_test, y_test = _process_dir(params, path, "", X_test, y_test, counts)  
     X_test = X_test.astype(np.float32)
     y_test = y_test.astype(np.int32)
-    if mean_image != None:
+    if mean_image is not None:
         X_test = X_test - mean_image
         
     return {
