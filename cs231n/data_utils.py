@@ -75,7 +75,7 @@ def load_fmow(param, subtract_mean=True, load_train=True, load_test=True):
             print("Extracting images from %s..." % category)
             path = os.path.join(params['dataset'], 'train', category)
             counts[cat_name] = sys.maxsize
-            X_train, y_train = _process_dir(params, path, category, X_load, y_load, counts)
+            X_train, y_train = _process_dir(params, path, category, X_train, y_train, counts)
         X_train = X_train.astype(np.float32)
         y_train = y_train.astype(np.int32)
         X_val = X_train[X_train.shape[0]*0.9:, :, :, :]
