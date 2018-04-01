@@ -13,7 +13,7 @@ import re
 import math
 import sys
 
-def load_fmow(path, dtype=np.float32, subtract_mean=True, load_train=True, load_test=True):
+def load_fmow(param, subtract_mean=True, load_train=True, load_test=True):
     """
     Load Functional Map of World. Each of fMoW training set and validation
     set has the same directory structure, so this could be used to load any
@@ -49,7 +49,6 @@ def load_fmow(path, dtype=np.float32, subtract_mean=True, load_train=True, load_
           /0001_1_rgb.jpg
           /0001_1_rgb.json
         /0002
-    - dtype: numpy datatype used to load the data
     - subtract_mean: boolean indicating whether to subtract the mean training image
     
     Returns: A dictionary with the following entries
@@ -64,15 +63,15 @@ def load_fmow(path, dtype=np.float32, subtract_mean=True, load_train=True, load_
     """
         
     # Load training data, validation data and test data at once
-    X_train = np.array([], dtype=np.float32).reshape(0, 1, 200, 200)
+    X_train = np.array([], dtype=np.float32).reshape(0, 1, 224, 224)
     y_train = np.array([], dtype=np.int32).reshape(0, )
-    X_test = np.array([], dtype=np.float32).reshape(0, 1, 200, 200)
+    X_test = np.array([], dtype=np.float32).reshape(0, 1, 224, 224)
     y_test = np.array([], dtype=np.int32).reshape(0, )
     
     counts = {}
     if load_train:
         print("Extracting Training and Validation Images...")
-        for category in tqdm(params['fmow_class_names_mini']):
+        for category in tqdm(params['fmow_class_names']):
             print("Extracting images from %s..." % category)
             path = os.path.join(params['dataset'], 'train', category)
             counts[cat_name] = sys.maxsize
@@ -135,7 +134,7 @@ def load_mini_fmow(params, subtract_mean=True, batch_size=1000):
     load_size = int(batch_size*1.3)
     
     # Load training data, validation data and test data at once
-    X_load = np.array([], dtype=np.float32).reshape(0, 1, 200, 200)
+    X_load = np.array([], dtype=np.float32).reshape(0, 1, 224, 224)
     y_load = np.array([], dtype=np.int32).reshape(0, )
     
     batch_dict = {}
@@ -184,7 +183,7 @@ def load_mini_fmow(params, subtract_mean=True, batch_size=1000):
     }
 
 def load_test(params, mean_image):
-    X_test = np.array([], dtype=np.float32).reshape(0, 1, 200, 200)
+    X_test = np.array([], dtype=np.float32).reshape(0, 1, 224, 224)
     y_test = np.array([], dtype=np.int32).reshape(0, )
     
     print("Extracting Test Images...")
@@ -318,18 +317,16 @@ def _process_image(params, image_file, metadata_file, X, y):
             continue
 
         subimg = image[r1:r2, c1:c2]
-        subimg = cv2.resize(subimg, (200, 200)).astype(np.uint8)
+        subimg = cv2.resize(subimg, (224, 224)).astype(np.uint8)
         
         if 'category' not in bb:
             rbc_category = -1
         else:
             fmow_category = params['fmow_class_names'].index(bb['category'])
             if fmow_category in [30, 48]:
-                rbc_category = 1
-            elif fmow_category == 0:
                 rbc_category = 0
             else:
-                rbc_category = 2 
+                rbc_category = 1
        
         subimg = np.expand_dims(subimg, axis=0)
         subimg = np.expand_dims(subimg, axis=0)

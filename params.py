@@ -3,8 +3,9 @@ import numpy as np
 
 
 # Project Parameter
-dataset = '/home/feng/ext2/data/fmow'          # Qiang's Server
+dataset = '/home/feng/ext2/data/fmow-mini'          # Qiang's Server
 # dataset = '/Users/Feng/Desktop/CV/data/fmow' # Feng's Mac
+output = '/home/feng/ext2/feng/workspace/residential_building_challenge/output'
 num_threads = 1
 dtype = torch.FloatTensor
 
@@ -17,7 +18,6 @@ learning_rate = 1e-4
 print_every = 10
 # Dataset 
 rbc_class_names = [
-    'false_detection',
     'residential',
     'non_residential',
 ]
