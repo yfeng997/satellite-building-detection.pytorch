@@ -37,6 +37,7 @@ def train_epoch(model, loader, optimizer, epoch, n_epochs, print_freq=1):
 
     end = time.time()
     for batch_idx, (input, target) in enumerate(loader):
+        target = target[:,0]
         # Create vaiables
         if torch.cuda.is_available():
             input_var = torch.autograd.Variable(input.cuda(async=True))
@@ -89,6 +90,7 @@ def test_epoch(model, loader, print_freq=1, is_test=True):
 
     end = time.time()
     for batch_idx, (input, target) in enumerate(loader):
+        target = target[:,0]
         # Create vaiables
         if torch.cuda.is_available():
             input_var = torch.autograd.Variable(input.cuda(async=True), volatile=True)

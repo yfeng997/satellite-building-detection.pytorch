@@ -3,11 +3,12 @@ import numpy as np
 
 
 # Project Parameter
-dataset = '/home/feng/ext2/data/fmow-mini'          # Qiang's Server
-# dataset = '/Users/Feng/Desktop/CV/dataset/fmow' # Feng's Mac
+dataset = '/home/feng/ext2/data/fMoW-rgb'          # Qiang's Server
+# dataset = '/Users/Feng/Desktop/CV/data/fmow' # Feng's Mac
 output = '/home/feng/ext2/feng/workspace/residential_building_challenge/output'
+
 num_threads = 1
-dtype = torch.FloatTensor
+dtype = torch.cuda.FloatTensor
 
 
 # Training Parameters
@@ -18,8 +19,8 @@ learning_rate = 1e-4
 print_every = 10
 # Dataset 
 rbc_class_names = [
-    'residential',
     'non_residential',
+    'residential',
 ]
 
 fmow_class_names_mini = [
@@ -31,15 +32,15 @@ fmow_class_names_mini = [
 # 'aquaculture',
 # 'archaeological_site',
 'barn',
-'border_checkpoint',
+# 'border_checkpoint',
 # 'burial_site',
 # 'car_dealership',
-'construction_site',
+# 'construction_site',
 # 'crop_field',
 # 'dam',
 # 'debris_or_rubble',
 'educational_institution',
-# 'electric_substation',
+'electric_substation',
 'factory_or_powerplant',
 'fire_station',
 # 'flooded_road',
@@ -51,7 +52,7 @@ fmow_class_names_mini = [
 'hospital',
 # 'interchange',
 # 'lake_or_pond',
-# 'lighthouse',
+'lighthouse',
 'military_facility',
 'multi-unit_residential',
 # 'nuclear_powerplant',
@@ -76,11 +77,11 @@ fmow_class_names_mini = [
 # 'solar_farm',
 'space_facility',
 # 'stadium',
-'storage_tank',
+# 'storage_tank',
 # 'surface_mine',
 # 'swimming_pool',
 # 'toll_booth',
-# 'tower',
+'tower',
 # 'tunnel_opening',
 # 'waste_disposal',
 # 'water_treatment_facility',
