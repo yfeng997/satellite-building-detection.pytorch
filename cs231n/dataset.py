@@ -42,8 +42,8 @@ class FMOWDataset(Dataset):
         for category in params['fmow_class_names_mini']:
             populate_map(category)
             
-        # Populate a smaller map
-        size = 80000
+        # Populate a smaller map 
+        size = 50000
         indices = np.random.choice(len(self.map), size, replace=False)
         self.mini_map = {}
         for i, idx in enumerate(indices):
@@ -80,12 +80,14 @@ class FMOWDataset(Dataset):
         c2 = min(c2, image.shape[1])
         image = image[r1:r2, c1:c2, np.newaxis]
         
-        fmow_category = self.params['fmow_class_names'].index(bb['category'])
         label = np.ndarray([1,])
-        if fmow_category in [30, 48]:
-            label[0] = 1
-        else:
-            label[0] = 0  
+#         fmow_category = self.params['fmow_class_names'].index(bb['category'])         
+#         if fmow_category in [30, 48]:
+#             label[0] = 1
+#         else:
+#             label[0] = 0 
+        # Train harder on 20 categories
+        label[0] = self.params['fmow_class_names_mini'].index(bb['category'])
             
         if self.transform:
             sample = self.transform({'image': image, 'label':label})
@@ -208,12 +210,14 @@ class FMOWDataset_test(Dataset):
         c2 = min(c2, image.shape[1])
         image = image[r1:r2, c1:c2, np.newaxis]
         
-        fmow_category = self.params['fmow_class_names'].index(bb['category'])
         label = np.ndarray([1,])
-        if fmow_category in [30, 48]:
-            label[0] = 1
-        else:
-            label[0] = 0  
+#         fmow_category = self.params['fmow_class_names'].index(bb['category'])         
+#         if fmow_category in [30, 48]:
+#             label[0] = 1
+#         else:
+#             label[0] = 0 
+        # Train harder on 20 categories
+        label[0] = self.params['fmow_class_names_mini'].index(bb['category'])  
             
         if self.transform:
             sample = self.transform({'image': image, 'label':label})
