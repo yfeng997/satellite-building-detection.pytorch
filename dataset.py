@@ -149,19 +149,19 @@ class WCDataset(Dataset):
             image = cv2.imread(image_p, 0).astype(np.float32)
         except Exception as e:
             print("Exception: %s" % e)
-        # position of the bounding box: width: 0.4-0.6 height: 0.4-0.6
+        # position of the bounding box: width: 0.3-0.7 height: 0.3-0.7
         h, w = image.shape
-        buffer = 16
-        r1 = h*0.4 - buffer
-        r2 = h*0.6 + buffer
-        c1 = w*0.4 - buffer
-        c2 = w*0.6 + buffer
+        buffer = 0
+        r1 = int(h*0.3) - buffer
+        r2 = int(h*0.7) + buffer
+        c1 = int(w*0.3) - buffer
+        c2 = int(w*0.7) + buffer
         image = image[r1:r2, c1:c2, np.newaxis]    
         
         wc_category = int(image_p.split("_")[1][:-5])  
         label = np.ndarray([1,])
         # Train on 2 categories: 1 is residential and 0 is non residential
-        if (wc_category % 1000) >= 245  && (wc_category % 1000) <= 295:
+        if (wc_category % 1000) >= 245  and (wc_category % 1000) <= 295:
             label[0] = 1
         else:
             label[0] = 0 
