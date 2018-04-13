@@ -14,9 +14,13 @@ class FMOWDataset(Dataset):
     Total Data: 157378 images
     Residential Data: 18450 (13.28%)
     Non-residential Data: 138928 (86.72%)
+    
+    Obtain Data: 36900 images
+    Residential Data: 18450 (50%)
+    Non-residential Data: 18450 (50%)
     """
 
-    def __init__(self, params, transform=None):
+    def __init__(self, params, transform=None, train=True):
         """
         Args:
             params (dict): Dict containing key parameters of the project
@@ -27,8 +31,19 @@ class FMOWDataset(Dataset):
         self.transform = transform
         self.map = {}
         self.curr_index = 0
+        
         def populate_map(category):
-            path = os.path.join(params['dataset'], 'train', category)
+            # Control the number of res vs non res
+            if category in ['single-unit_residential', 'multi-unit_residential']:
+                count = 18450/2
+            else:
+                count = 18450/18
+            
+            if train:
+                path = os.path.join(params['dataset_fmow'], 'train', category) 
+            else:
+                path = os.path.join(params['dataset_fmow'], 'test', category)
+                
             for root, dirs, files in os.walk(path):
                 for file in files:
                     if file.endswith('_rgb.jpg'):
@@ -37,18 +52,21 @@ class FMOWDataset(Dataset):
                             continue
                         self.map[self.curr_index] = image
                         self.curr_index += 1
-        res_count = 0
-        non_res_count = 0
+                        
+                        count -= 1
+                        if count < 0:
+                            return
+                        
         for category in params['fmow_class_names_mini']:
             populate_map(category)
             
         # Populate a smaller map 
-        size = 50000
-        indices = np.random.choice(len(self.map), size, replace=False)
-        self.mini_map = {}
-        for i, idx in enumerate(indices):
-            self.mini_map[i] = self.map[idx]
-        self.map = self.mini_map
+#         size = 10000
+#         indices = np.random.choice(len(self.map), size, replace=False)
+#         self.mini_map = {}
+#         for i, idx in enumerate(indices):
+#             self.mini_map[i] = self.map[idx]
+#         self.map = self.mini_map
 
     def __len__(self):
         return len(self.map)
@@ -81,18 +99,78 @@ class FMOWDataset(Dataset):
         image = image[r1:r2, c1:c2, np.newaxis]
         
         label = np.ndarray([1,])
-#         fmow_category = self.params['fmow_class_names'].index(bb['category'])         
-#         if fmow_category in [30, 48]:
-#             label[0] = 1
-#         else:
-#             label[0] = 0 
+        # Train on 2 categories
+        fmow_category = self.params['fmow_class_names'].index(bb['category'])         
+        if fmow_category in [30, 48]:
+            label[0] = 1
+        else:
+            label[0] = 0 
         # Train harder on 20 categories
-        label[0] = self.params['fmow_class_names_mini'].index(bb['category'])
+#         label[0] = self.params['fmow_class_names_mini'].index(bb['category'])
             
         if self.transform:
             sample = self.transform({'image': image, 'label':label})
             
         return sample['image'], sample['label']
+    
+   
+    
+class WCDataset(Dataset):
+    """Functional Map of World Dataset"""
+
+    def __init__(self, params, transform=None, train=True):
+        """
+        Args:
+            params (dict): Dict containing key parameters of the project
+            transform (callable, optional): Optional transform to be applied
+                on a sample.
+            test(boolean): indicating if the dataset if for training or testing
+        """
+        self.params = params
+        self.transform = transform
+        self.map = {}
+        self.curr_index = 0
+        if train:
+            path = os.path.join(params['dataset_wc'], 'train') 
+        else:
+            path = os.path.join(params['dataset_wc'], 'test')
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                image_p = os.path.join(root, file)
+                self.map[self.curr_index] = image_p
+                self.curr_index += 1
+
+    def __len__(self):
+        return len(self.map)
+
+    def __getitem__(self, idx):
+        image_p = self.map[idx]
+        try:
+            image = cv2.imread(image_p, 0).astype(np.float32)
+        except Exception as e:
+            print("Exception: %s" % e)
+        # position of the bounding box: width: 0.4-0.6 height: 0.4-0.6
+        h, w = image.shape
+        buffer = 16
+        r1 = h*0.4 - buffer
+        r2 = h*0.6 + buffer
+        c1 = w*0.4 - buffer
+        c2 = w*0.6 + buffer
+        image = image[r1:r2, c1:c2, np.newaxis]    
+        
+        wc_category = int(image_p.split("_")[1][:-5])  
+        label = np.ndarray([1,])
+        # Train on 2 categories: 1 is residential and 0 is non residential
+        if (wc_category % 1000) >= 245  && (wc_category % 1000) <= 295:
+            label[0] = 1
+        else:
+            label[0] = 0 
+            
+        if self.transform:
+            sample = self.transform({'image': image, 'label':label})
+            
+        return sample['image'], sample['label']
+    
     
 class ToTensor(object):
     """Convert ndarrays to Tensors."""
@@ -142,87 +220,93 @@ class Normalize(object):
         image = (image - mean_image) / self.std
         return {'image': image, 'label':label}
 
+ 
+
+
+
+
+
     
     
-    
-class FMOWDataset_test(Dataset):
-    """Functional Map of World Dataset"""
+# class FMOWDataset_test(Dataset):
+#     """Functional Map of World Dataset"""
 
-    def __init__(self, params, transform=None):
-        """
-        Args:
-            params (dict): Dict containing key parameters of the project
-            transform (callable, optional): Optional transform to be applied
-                on a sample.
-        """
-        self.params = params
-        self.transform = transform
-        self.map = {}
-        self.curr_index = 0
-        path = os.path.join(params['dataset'], 'test')
-        for root, dirs, files in os.walk(path):
-            for file in files:
-                if file.endswith('_rgb.jpg'):
-                    image_p = os.path.join(root, file)
-                    if not os.path.isfile(image_p):
-                            continue
-                    metadata_p = image_p[:-3] + 'json'
-                    try:
-                        m = open(metadata_p)
-                        metadata = json.load(m)
-                        m.close()
-                    except Exception as e:
-                        print("Exception: %s" % e)
-                    if not isinstance(metadata['bounding_boxes'], list):
-                        metadata['bounding_boxes'] = [metadata['bounding_boxes']]
-                    for i, bb in enumerate(metadata['bounding_boxes']):
-                        self.map[self.curr_index] = image_p + ":" + str(i)
-                        self.curr_index += 1
+#     def __init__(self, params, transform=None):
+#         """
+#         Args:
+#             params (dict): Dict containing key parameters of the project
+#             transform (callable, optional): Optional transform to be applied
+#                 on a sample.
+#         """
+#         self.params = params
+#         self.transform = transform
+#         self.map = {}
+#         self.curr_index = 0
+#         path = os.path.join(params['dataset'], 'test')
+#         for root, dirs, files in os.walk(path):
+#             for file in files:
+#                 if file.endswith('_rgb.jpg'):
+#                     image_p = os.path.join(root, file)
+#                     if not os.path.isfile(image_p):
+#                             continue
+#                     metadata_p = image_p[:-3] + 'json'
+#                     try:
+#                         m = open(metadata_p)
+#                         metadata = json.load(m)
+#                         m.close()
+#                     except Exception as e:
+#                         print("Exception: %s" % e)
+#                     if not isinstance(metadata['bounding_boxes'], list):
+#                         metadata['bounding_boxes'] = [metadata['bounding_boxes']]
+#                     for i, bb in enumerate(metadata['bounding_boxes']):
+#                         self.map[self.curr_index] = image_p + ":" + str(i)
+#                         self.curr_index += 1
 
-    def __len__(self):
-        return len(self.map)
+#     def __len__(self):
+#         return len(self.map)
 
-    def __getitem__(self, idx):
-        image_p, box_index = self.map[idx].split(":")
-        box_index = int(box_index)
-        metadata_p = image_p[:-3] + 'json'
-        try:
-            image = cv2.imread(image_p, 0).astype(np.float32)
-            m = open(metadata_p)
-            metadata = json.load(m)
-            m.close()
-        except Exception as e:
-            print("Exception: %s" % e)
-        if not isinstance(metadata['bounding_boxes'], list):
-            metadata['bounding_boxes'] = [metadata['bounding_boxes']]
-        # Locate the correct bounding box in the image
-        bb = metadata['bounding_boxes'][box_index]
+#     def __getitem__(self, idx):
+#         image_p, box_index = self.map[idx].split(":")
+#         box_index = int(box_index)
+#         metadata_p = image_p[:-3] + 'json'
+#         try:
+#             image = cv2.imread(image_p, 0).astype(np.float32)
+#             m = open(metadata_p)
+#             metadata = json.load(m)
+#             m.close()
+#         except Exception as e:
+#             print("Exception: %s" % e)
+#         if not isinstance(metadata['bounding_boxes'], list):
+#             metadata['bounding_boxes'] = [metadata['bounding_boxes']]
+#         # Locate the correct bounding box in the image
+#         bb = metadata['bounding_boxes'][box_index]
         
-        box = bb['box']
-        buffer = 16
-        r1 = box[1] - buffer
-        r2 = box[1] + box[3] + buffer
-        c1 = box[0] - buffer
-        c2 = box[0] + box[2] + buffer
-        r1 = max(r1, 0)
-        r2 = min(r2, image.shape[0])
-        c1 = max(c1, 0)
-        c2 = min(c2, image.shape[1])
-        image = image[r1:r2, c1:c2, np.newaxis]
+#         box = bb['box']
+#         buffer = 16
+#         r1 = box[1] - buffer
+#         r2 = box[1] + box[3] + buffer
+#         c1 = box[0] - buffer
+#         c2 = box[0] + box[2] + buffer
+#         r1 = max(r1, 0)
+#         r2 = min(r2, image.shape[0])
+#         c1 = max(c1, 0)
+#         c2 = min(c2, image.shape[1])
+#         image = image[r1:r2, c1:c2, np.newaxis]
         
-        label = np.ndarray([1,])
+#         label = np.ndarray([1,])
+#         # Train on 2 categories
 #         fmow_category = self.params['fmow_class_names'].index(bb['category'])         
 #         if fmow_category in [30, 48]:
 #             label[0] = 1
 #         else:
 #             label[0] = 0 
-        # Train harder on 20 categories
-        label[0] = self.params['fmow_class_names_mini'].index(bb['category'])  
+#         # Train harder on 20 categories
+# #         label[0] = self.params['fmow_class_names_mini'].index(bb['category'])  
             
-        if self.transform:
-            sample = self.transform({'image': image, 'label':label})
+#         if self.transform:
+#             sample = self.transform({'image': image, 'label':label})
             
-        return sample['image'], sample['label']
+#         return sample['image'], sample['label']
     
     
 

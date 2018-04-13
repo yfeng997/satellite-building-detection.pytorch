@@ -3,9 +3,10 @@ import numpy as np
 
 
 # Project Parameter
-dataset = '/home/feng/ext2/data/fMoW-rgb'          # Qiang's Server
+dataset_fmow = '/home/feng/ext2/data/fMoW-rgb'          # Qiang's Server
+dataset_wc = '/home/feng/ext2/data/wc'  
 # dataset = '/Users/Feng/Desktop/CV/data/fmow' # Feng's Mac
-output = '/home/feng/ext2/feng/workspace/residential_building_challenge/output'
+# output = '/home/feng/ext2/feng/workspace/residential_building_challenge/output'
 
 num_threads = 1
 dtype = torch.cuda.FloatTensor
