@@ -35,9 +35,9 @@ class FMOWDataset(Dataset):
         def populate_map(category):
             # Control the number of res vs non res
             if category in ['single-unit_residential', 'multi-unit_residential']:
-                count = 18450/2 if train else 5000/2
+                count = 20000/2 if train else 5000/2
             else:
-                count = 31550/18 if train else 5000/18
+                count = 40000/18 if train else 5000/18
             
             if train:
                 path = os.path.join(params['dataset_fmow'], 'train', category) 
@@ -137,6 +137,14 @@ class WCDataset(Dataset):
                 image_p = os.path.join(root, file)
                 self.map[self.curr_index] = image_p
                 self.curr_index += 1
+        
+        # Populate a smaller map 
+        size = 6 if train else len(self.map) 
+        indices = np.random.choice(len(self.map), size, replace=False)
+        self.mini_map = {}
+        for i, idx in enumerate(indices):
+            self.mini_map[i] = self.map[idx]
+        self.map = self.mini_map
 
     def __len__(self):
         return len(self.map)
