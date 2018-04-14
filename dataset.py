@@ -15,9 +15,9 @@ class FMOWDataset(Dataset):
     Residential Data: 18450 (13.28%)
     Non-residential Data: 138928 (86.72%)
     
-    Obtain Data: 36900 images
-    Residential Data: 18450 (50%)
-    Non-residential Data: 18450 (50%)
+    Obtain Data: 50000 images
+    Residential Data: 18450 (37%)
+    Non-residential Data: 31550 (63%)
     """
 
     def __init__(self, params, transform=None, train=True):
@@ -35,14 +35,14 @@ class FMOWDataset(Dataset):
         def populate_map(category):
             # Control the number of res vs non res
             if category in ['single-unit_residential', 'multi-unit_residential']:
-                count = 18450/2
+                count = 18450/2 if train else 5000/2
             else:
-                count = 18450/18
+                count = 31550/18 if train else 5000/18
             
             if train:
                 path = os.path.join(params['dataset_fmow'], 'train', category) 
             else:
-                path = os.path.join(params['dataset_fmow'], 'test', category)
+                path = os.path.join(params['dataset_fmow'], 'test')
                 
             for root, dirs, files in os.walk(path):
                 for file in files:
@@ -52,14 +52,12 @@ class FMOWDataset(Dataset):
                             continue
                         self.map[self.curr_index] = image
                         self.curr_index += 1
-                        
                         count -= 1
                         if count < 0:
                             return
                         
         for category in params['fmow_class_names_mini']:
             populate_map(category)
-            
         # Populate a smaller map 
 #         size = 10000
 #         indices = np.random.choice(len(self.map), size, replace=False)
