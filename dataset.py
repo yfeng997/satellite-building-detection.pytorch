@@ -139,7 +139,7 @@ class WCDataset(Dataset):
                 self.curr_index += 1
         
         # Populate a smaller map 
-        size = 6 if train else len(self.map) 
+        size = 50 if train else len(self.map) 
         indices = np.random.choice(len(self.map), size, replace=False)
         self.mini_map = {}
         for i, idx in enumerate(indices):
