@@ -12,13 +12,16 @@ def train_epoch(model, loader, optimizer, epoch, n_epochs, print_freq=1):
     losses = AverageMeter()
     error = AverageMeter()
     mean = AverageMeter()
+    std = AverageMeter()
 
     # Model on train mode
     model.train()
 
     end = time.time()
     for batch_idx, (input, target) in enumerate(loader):
+        # Walkaround...
         target = target[:,0]
+        input = input.type(torch.FloatTensor)
         # Create vaiables
         if torch.cuda.is_available():
             input_var = torch.autograd.Variable(input.cuda(async=True))
@@ -47,6 +50,11 @@ def train_epoch(model, loader, optimizer, epoch, n_epochs, print_freq=1):
         end = time.time()
 
         mean.update(np.mean(input.numpy()))
+        ninput = input.numpy()
+        delta = ninput - 90.5174
+        delta = delta**2
+        stad = np.sum(delta)/(224*224-1)
+        std.update(stad**0.5)
         
         # print stats
         if batch_idx % print_freq == 0:
@@ -61,6 +69,7 @@ def train_epoch(model, loader, optimizer, epoch, n_epochs, print_freq=1):
 
     print("mean image:")
     print(mean.avg)
+    print(std.avg)
     # Return summary statistics
     return batch_time.avg, losses.avg, error.avg
 
@@ -76,7 +85,9 @@ def test_epoch(model, loader, print_freq=1, is_test=True):
 
     end = time.time()
     for batch_idx, (input, target) in enumerate(loader):
+        # walkaround...
         target = target[:,0]
+        input = input.type(torch.FloatTensor)
         # Create vaiables
         if torch.cuda.is_available():
             input_var = torch.autograd.Variable(input.cuda(async=True), volatile=True)

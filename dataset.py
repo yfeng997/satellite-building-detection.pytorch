@@ -7,6 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 import cv2
 import simplejson as json
+from PIL import Image
 
 class FMOWDataset(Dataset):
     """Functional Map of World Dataset"""
@@ -107,9 +108,9 @@ class FMOWDataset(Dataset):
 #         label[0] = self.params['fmow_class_names_mini'].index(bb['category'])
             
         if self.transform:
-            sample = self.transform({'image': image, 'label':label})
+            sample = self.transform(image)
             
-        return sample['image'], sample['label']
+        return image, label
     
    
     
@@ -139,7 +140,7 @@ class WCDataset(Dataset):
                 self.curr_index += 1
         
         # Populate a smaller map 
-        size = 50 if train else len(self.map) 
+        size = 12000 if train else len(self.map) 
         indices = np.random.choice(len(self.map), size, replace=False)
         self.mini_map = {}
         for i, idx in enumerate(indices):
@@ -152,79 +153,80 @@ class WCDataset(Dataset):
     def __getitem__(self, idx):
         image_p = self.map[idx]
         try:
-            image = cv2.imread(image_p, 0).astype(np.float32)
+            image = cv2.imread(image_p, 0).astype(np.int32)
         except Exception as e:
             print("Exception: %s" % e)
         # position of the bounding box: width: 0.3-0.7 height: 0.3-0.7
         h, w = image.shape
-        buffer = 0
-        r1 = int(h*0.3) - buffer
-        r2 = int(h*0.7) + buffer
-        c1 = int(w*0.3) - buffer
-        c2 = int(w*0.7) + buffer
-        image = image[r1:r2, c1:c2, np.newaxis]    
+        r1 = int(h*0.25)
+        r2 = int(h*0.75)
+        c1 = int(w*0.25)
+        c2 = int(w*0.75)
+        image = image[r1:r2, c1:c2]    
         
         wc_category = int(image_p.split("_")[1][:-5])  
-        label = np.ndarray([1,])
+        label = np.ndarray([1,], dtype=int)
         # Train on 2 categories: 1 is residential and 0 is non residential
         if (wc_category % 1000) >= 245  and (wc_category % 1000) <= 295:
             label[0] = 1
         else:
             label[0] = 0 
-            
+        
+        image = Image.fromarray(image, mode='I')
+        
         if self.transform:
-            sample = self.transform({'image': image, 'label':label})
+            image = self.transform(image)
             
-        return sample['image'], sample['label']
+        return image, label
     
     
-class ToTensor(object):
-    """Convert ndarrays to Tensors."""
+# class ToTensor(object):
+#     """Convert ndarrays to Tensors."""
 
-    def __call__(self, sample):
-        image, label = sample['image'], sample['label']
-        # Move color channel
-        image = image.transpose((2, 0, 1))
-        return {'image': torch.FloatTensor(image), 'label': torch.LongTensor(label)}
+#     def __call__(self, sample):
+#         image, label = sample['image'], sample['label']
+#         # Move color channel
+#         image = image.transpose((2, 0, 1))
+#         return {'image': torch.FloatTensor(image), 'label': torch.LongTensor(label)}
     
-class Rescale(object):
-    """Rescale the image in a sample to a given size.
+# class Rescale(object):
+#     """Rescale the image in a sample to a given size.
 
-    Args:
-        output_size (tuple): Desired output size. Output is
-            matched to output_size
-    """
+#     Args:
+#         output_size (tuple): Desired output size. Output is
+#             matched to output_size
+#     """
 
-    def __init__(self, output_size):
-        assert isinstance(output_size, (tuple))
-        self.output_size = output_size
+#     def __init__(self, output_size):
+#         assert isinstance(output_size, (tuple))
+#         self.output_size = output_size
 
-    def __call__(self, sample):
-        image, label = sample['image'], sample['label']
-        h, w = image.shape[:2]
-        new_h, new_w = self.output_size
-        new_h, new_w = int(new_h), int(new_w)
-        image = cv2.resize(image, (new_w, new_h))
-        image = image[:,:,np.newaxis]
-        return {'image': image, 'label':label}
+#     def __call__(self, sample):
+#         image, label = sample['image'], sample['label']
+#         h, w = image.shape[:2]
+#         new_h, new_w = self.output_size
+#         new_h, new_w = int(new_h), int(new_w)
+#         image = cv2.resize(image, (new_w, new_h))
+#         image = image[:,:,np.newaxis]
+#         return {'image': image, 'label':label}
 
-class Normalize(object):
-    """Rescale the image in a sample to a given size.
+# class Normalize(object):
+#     """Rescale the image in a sample to a given size.
 
-    Args:
-        output_size (tuple): Desired output size. Output is
-            matched to output_size
-    """
+#     Args:
+#         output_size (tuple): Desired output size. Output is
+#             matched to output_size
+#     """
 
-    def __init__(self, mean, std):
-        self.mean = mean
-        self.std = std
+#     def __init__(self, mean, std):
+#         self.mean = mean
+#         self.std = std
 
-    def __call__(self, sample):
-        image, label = sample['image'], sample['label']
-        mean_image = np.ones(image.shape)*self.mean
-        image = (image - mean_image) / self.std
-        return {'image': image, 'label':label}
+#     def __call__(self, sample):
+#         image, label = sample['image'], sample['label']
+#         mean_image = np.ones(image.shape)*self.mean
+#         image = (image - mean_image) / self.std
+#         return {'image': image, 'label':label}
 
  
 
