@@ -36,9 +36,9 @@ class FMOWDataset(Dataset):
         def populate_map(category):
             # Control the number of res vs non res
             if category in ['single-unit_residential', 'multi-unit_residential']:
-                count = 20000/2 if train else 5000/2
+                count = 30000/2 if train else 5000/2
             else:
-                count = 40000/18 if train else 5000/18
+                count = 30000/18 if train else 5000/18
             
             if train:
                 path = os.path.join(params['dataset_fmow'], 'train', category) 
@@ -60,7 +60,7 @@ class FMOWDataset(Dataset):
         for category in params['fmow_class_names_mini']:
             populate_map(category)
         # Populate a smaller map 
-#         size = 10000
+#         size = 100
 #         indices = np.random.choice(len(self.map), size, replace=False)
 #         self.mini_map = {}
 #         for i, idx in enumerate(indices):
@@ -74,7 +74,7 @@ class FMOWDataset(Dataset):
         image_p = self.map[idx]
         metadata_p = image_p[:-3] + 'json'
         try:
-            image = cv2.imread(image_p, 0).astype(np.float32)
+            image = cv2.imread(image_p, 0).astype(np.int32)
             m = open(metadata_p)
             metadata = json.load(m)
             m.close()
@@ -86,7 +86,7 @@ class FMOWDataset(Dataset):
         bb = metadata['bounding_boxes']
         
         box = bb['box']
-        buffer = 16
+        buffer = 8
         r1 = box[1] - buffer
         r2 = box[1] + box[3] + buffer
         c1 = box[0] - buffer
@@ -95,9 +95,10 @@ class FMOWDataset(Dataset):
         r2 = min(r2, image.shape[0])
         c1 = max(c1, 0)
         c2 = min(c2, image.shape[1])
-        image = image[r1:r2, c1:c2, np.newaxis]
+        image = image[r1:r2, c1:c2]
+        image = Image.fromarray(image, mode='I')
         
-        label = np.ndarray([1,])
+        label = np.ndarray([1,], dtype=int)
         # Train on 2 categories
         fmow_category = self.params['fmow_class_names'].index(bb['category'])         
         if fmow_category in [30, 48]:
@@ -108,7 +109,8 @@ class FMOWDataset(Dataset):
 #         label[0] = self.params['fmow_class_names_mini'].index(bb['category'])
             
         if self.transform:
-            sample = self.transform(image)
+            image = self.transform(image)
+            label = torch.from_numpy(label)
             
         return image, label
     
@@ -132,7 +134,7 @@ class WCDataset(Dataset):
         if train:
             path = os.path.join(params['dataset_wc'], 'train') 
         else:
-            path = os.path.join(params['dataset_wc'], 'test')
+            path = os.path.join(params['dataset_demo'], 'test')
         for root, dirs, files in os.walk(path):
             for file in files:
                 image_p = os.path.join(root, file)
@@ -140,7 +142,7 @@ class WCDataset(Dataset):
                 self.curr_index += 1
         
         # Populate a smaller map 
-        size = 12000 if train else len(self.map) 
+        size = 1000 if train else len(self.map) 
         indices = np.random.choice(len(self.map), size, replace=False)
         self.mini_map = {}
         for i, idx in enumerate(indices):
@@ -162,7 +164,8 @@ class WCDataset(Dataset):
         r2 = int(h*0.75)
         c1 = int(w*0.25)
         c2 = int(w*0.75)
-        image = image[r1:r2, c1:c2]    
+        image = image[r1:r2, c1:c2]  
+        image = Image.fromarray(image, mode='I')
         
         wc_category = int(image_p.split("_")[1][:-5])  
         label = np.ndarray([1,], dtype=int)
@@ -172,10 +175,9 @@ class WCDataset(Dataset):
         else:
             label[0] = 0 
         
-        image = Image.fromarray(image, mode='I')
-        
         if self.transform:
             image = self.transform(image)
+            label = torch.from_numpy(label)
             
         return image, label
     
