@@ -15,8 +15,11 @@ def getCAM(X, y, model):
     - class activatino map: A Tensor of shape (N, H, W, 3) giving the class activation maps for the input
     images.
     """
-#     if torch.cuda.is_available():
-#         model.cuda()
+    if len(list(X.size())) == 0:
+        return []
+    
+    if torch.cuda.is_available():
+        model.cuda()
     model.eval()
 
     # get weight for feature maps from last fc layer

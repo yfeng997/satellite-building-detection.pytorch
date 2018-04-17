@@ -165,7 +165,7 @@ def train(model, train_set, test_set, save, n_epochs=300, valid_size=5000,
     # Optimizer
     optimizer = torch.optim.SGD(model_wrapper.parameters(), lr=lr, momentum=momentum, nesterov=True, weight_decay=wd)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
-                                                     milestones=[0.5 * n_epochs, 0.7 * n_epochs, 0.9 *n_epochs],
+                                                     milestones=[0.5 * n_epochs, 0.7 * n_epochs, 0.9 * n_epochs],
                                                      gamma=0.1)
 
     # Start log

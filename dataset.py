@@ -134,7 +134,7 @@ class WCDataset(Dataset):
         if train:
             path = os.path.join(params['dataset_wc'], 'train') 
         else:
-            path = os.path.join(params['dataset_demo'], 'test')
+            path = os.path.join(params['dataset_wc'], 'test')
         for root, dirs, files in os.walk(path):
             for file in files:
                 image_p = os.path.join(root, file)
@@ -142,12 +142,12 @@ class WCDataset(Dataset):
                 self.curr_index += 1
         
         # Populate a smaller map 
-        size = 1000 if train else len(self.map) 
-        indices = np.random.choice(len(self.map), size, replace=False)
-        self.mini_map = {}
-        for i, idx in enumerate(indices):
-            self.mini_map[i] = self.map[idx]
-        self.map = self.mini_map
+#         size = 1000 if train else len(self.map) 
+#         indices = np.random.choice(len(self.map), size, replace=False)
+#         self.mini_map = {}
+#         for i, idx in enumerate(indices):
+#             self.mini_map[i] = self.map[idx]
+#         self.map = self.mini_map
 
     def __len__(self):
         return len(self.map)
