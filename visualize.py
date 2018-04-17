@@ -39,7 +39,8 @@ def getCAM(X, y, model):
         X_var = torch.autograd.Variable(X)
     # forward pass input variable and obtain features
     output = model(X_var)
-    
+    _, preds = output.data.cpu().max(1)
+
     # combine feature maps with corresponding weights
     cams = []
     N, C, H, W = X.size()
