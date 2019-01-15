@@ -1,18 +1,49 @@
 # SatelliteBuildingDetection.pytorch
 
-This is a project on detecting and classfying buildings through satellite images. 
+This project is on detecting and classifying buildings through satellite images. Satellite images are inputted in raw form with 3 channels, without building boundary information. The model then runs a [Single Shot Detector](https://arxiv.org/abs/1512.02325) to simultaneously propose potential buildings and classify the proposed region into target classes. For now we only classify buildings into two types: residential and non-residential. 
 
-This is an image captioning codebase in PyTorch. If you are familiar with neuraltalk2, here are the differences compared to neuraltalk2.
-- Instead of using random split, we use [karpathy's train-val-test split](http://cs.stanford.edu/people/karpathy/deepimagesent/caption_datasets.zip).
-- Instead of including the convnet in the model, we use preprocessed features. (finetuneable cnn version is in the branch **with_finetune**)
-- Use resnet instead of vgg; the feature extraction method is the same as in self-critical: run cnn on original image and adaptively average pool the last conv layer feature to fixed size .
-- Much more models (you can check out models folder). The latest topdown model can achieve 1.07 Cider score on Karpathy's test split with beam size 5.
+As a main objective of the project, we aim to demonstrate the effectiveness of transfer learning. Specifically, we first train the network on building images from all over the world. This generic dataset comes from [Functional Map of the World(fMoW)](https://arxiv.org/abs/1711.07846). We then fine tune our model based on region-specific building images. In our case, we use Wake County satellite images to prompt the model to learn more detailed features. We test our model performance on the satellite images from the specific region that we fine tune the model upon. 
 
 ## Requirements
-Python 2.7 (because there is no [coco-caption](https://github.com/tylin/coco-caption) version for python 3)
-PyTorch 0.4.1 (along with torchvision)
+Python 3.6 
+[PyTorch 1.0.0](https://pytorch.org/), for cuda 9.0
+OpenCV 3.4
+Matplotlib 3.9
+Other requirements: listed in environment.yml
+
+```
+$ conda create -n env_name -f environment.yml
+```
+This creates a new conda environment called env_name and installs all required packages in environment.yml
+
 
 You need to download pretrained resnet model for both training and evaluation. The models can be downloaded from [here](https://drive.google.com/open?id=0B7fNdx_jAqhtbVYzOURMdDNHSGM), and should be placed in `data/imagenet_weights`.
+
+## Pretrained models 
+
+
+## Getting started 
+The ipython notebook `main.ipynb` provides an overview of the whole project workflow, including data preprocessing, model specification, training, evaluation and visualization. 
+
+If you are running a remote server, ipython notebook allows for remote access in the following fashion.
+```
+remote_user@remote_server$ ipython notebook --no-browser --port=8999
+```
+This opens notebook on the remote server on port 8999 without opening a browser. We will instead forward the content to our local server. 
+
+```
+local_user@local_server$ ssh -N -f -L localhost:8888:localhost:8999 remote_user@remote_host
+```
+This creates an ssh shell to our remote server and enable port forwarding from remote server(-N). It also makes the shell go to background(-f). 
+After this, open a browser on local server and direct towards `localhost:8888`. 
+
+
+## Train your own network on fMoW
+
+
+
+
+
 
 
 ## Pretrained models
@@ -105,6 +136,13 @@ The defualt split to evaluate is test. The default inference method is greedy de
 **Train on other dataset**. It should be trivial to port if you can create a file like `dataset_coco.json` for your own dataset.
 
 **Live demo**. Not supported now. Welcome pull request.
+
+**iPython notebook error** After installing the modules, if you cannot load them into notebook, possibly you are using a wrong python executable. Run
+```
+$ jupyter kernelspec list
+```
+to find a list of available ipython kernels. Then in the corresponding python directory check `kernel.json` to make sure the executable is what you expect. 
+
 
 ## Reference
 If you find this implementation helpful, please consider citing this repo:
