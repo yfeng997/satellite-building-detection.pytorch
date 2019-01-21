@@ -32,7 +32,6 @@ class FMOWDataset(Dataset):
         self.transform = transform
         self.map = {}
         self.curr_index = 0
-        
         def populate_map(category):
             # Control the number of res vs non res
             if category in ['single-unit_residential', 'multi-unit_residential']:
@@ -71,7 +70,13 @@ class FMOWDataset(Dataset):
         return len(self.map)
 
     def __getitem__(self, idx):
-        image_p = self.map[idx]
+        try:
+            image_p = self.map[idx]
+        except Exception as e:
+            print(idx.type())
+            print(type(idx))
+            print(idx)
+            image_p = self.map[idx.numpy()]
         metadata_p = image_p[:-3] + 'json'
         try:
             image = cv2.imread(image_p, 0).astype(np.int32)
@@ -100,13 +105,13 @@ class FMOWDataset(Dataset):
         
         label = np.ndarray([1,], dtype=int)
         # Train on 2 categories
-        fmow_category = self.params['fmow_class_names'].index(bb['category'])         
-        if fmow_category in [30, 48]:
-            label[0] = 1
-        else:
-            label[0] = 0 
+        # fmow_category = self.params['fmow_class_names'].index(bb['category'])         
+        # if fmow_category in [30, 48]:
+        #     label[0] = 1
+        # else:
+        #     label[0] = 0 
         # Train harder on 20 categories
-#         label[0] = self.params['fmow_class_names_mini'].index(bb['category'])
+        label[0] = self.params['fmow_class_names_mini'].index(bb['category'])
             
         if self.transform:
             image = self.transform(image)

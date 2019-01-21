@@ -1,15 +1,13 @@
-# SatelliteBuildingDetection.pytorch
+# satellite-building-detection.pytorch
 
 This project is on detecting and classifying buildings through satellite images. Satellite images are inputted in raw form with 3 channels, without building boundary information. The model then runs a [Single Shot Detector](https://arxiv.org/abs/1512.02325) to simultaneously propose potential buildings and classify the proposed region into target classes. For now we only classify buildings into two types: residential and non-residential. 
 
-As a main objective of the project, we aim to demonstrate the effectiveness of transfer learning. Specifically, we first train the network on building images from all over the world. This generic dataset comes from [Functional Map of the World(fMoW)](https://arxiv.org/abs/1711.07846). We then fine tune our model based on region-specific building images. In our case, we use Wake County satellite images to prompt the model to learn more detailed features. We test our model performance on the satellite images from the specific region that we fine tune the model upon. 
+As another objective of the project, we aim to demonstrate the effectiveness of transfer learning across geometric domains. Specifically, we first train the network on building images from all over the world. This generic dataset comes from [Functional Map of the World(fMoW)](https://arxiv.org/abs/1711.07846). We then fine tune our model based on region-specific building images. In our case, we use Wake County satellite images to prompt the model to learn more detailed features. We test our model performance on the satellite images from the specific region that we fine tune the model upon. 
 
 ## Requirements
-Python 3.6 
-[PyTorch 1.0.0](https://pytorch.org/), for cuda 9.0
-OpenCV 3.4
-Matplotlib 3.9
-Other requirements: listed in environment.yml
+- python 3.6 
+- [PyTorch 1.0.0](https://pytorch.org/), for cuda 9.0
+- opencv, matplotlib and other requirements are listed in environment.yml
 
 ```
 $ conda create -n env_name -f environment.yml
@@ -23,6 +21,8 @@ You need to download pretrained resnet model for both training and evaluation. T
 
 
 ## Getting started 
+First modify the `params.py` file and point `dataset_fmow` and `dataset_wc` to the downloaded dataset. 
+
 The ipython notebook `main.ipynb` provides an overview of the whole project workflow, including data preprocessing, model specification, training, evaluation and visualization. 
 
 If you are running a remote server, ipython notebook allows for remote access in the following fashion.

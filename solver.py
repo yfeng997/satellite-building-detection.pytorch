@@ -115,7 +115,7 @@ def test_epoch(model, loader, print_freq=1, is_test=True):
     return batch_time.avg, losses.avg, error.avg 
 
 
-def train(model, train_set, test_set, save, n_epochs=300, valid_size=5000,
+def train(model, train_set, test_set, save='./output', n_epochs=300, valid_size=5000,
           batch_size=64, lr=0.1, wd=0.0001, momentum=0.9, seed=None):
     if seed is not None:
         torch.manual_seed(seed)

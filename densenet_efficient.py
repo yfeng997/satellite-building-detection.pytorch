@@ -81,9 +81,9 @@ class _DenseLayer(nn.Sequential):
 
         self.add_module('bn', _EfficientDensenetBottleneck(shared_allocation_1, shared_allocation_2,
                                                            num_input_features, bn_size * growth_rate))
-        self.add_module('norm.2', nn.BatchNorm2d(bn_size * growth_rate)),
-        self.add_module('relu.2', nn.ReLU(inplace=True)),
-        self.add_module('conv.2', nn.Conv2d(bn_size * growth_rate, growth_rate,
+        self.add_module('norm2', nn.BatchNorm2d(bn_size * growth_rate)),
+        self.add_module('relu2', nn.ReLU(inplace=True)),
+        self.add_module('conv2', nn.Conv2d(bn_size * growth_rate, growth_rate,
                         kernel_size=3, stride=1, padding=1, bias=False)),
 
     def forward(self, x):

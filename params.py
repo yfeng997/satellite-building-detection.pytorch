@@ -3,8 +3,8 @@ import numpy as np
 
 
 # Project Parameter
-dataset_fmow = '/home/feng/ext2/data/fMoW-rgb'          # Qiang's Server
-dataset_wc = '/home/feng/ext2/data/wc'  
+dataset_fmow = '/data/feng/fmow-mini'          
+dataset_wc = '/data/feng/wc'  
 dataset_demo = '/home/feng/ext2/data/demo'  
 # dataset = '/Users/Feng/Desktop/CV/data/fmow' # Feng's Mac
 # output = '/home/feng/ext2/feng/workspace/residential_building_challenge/output'
