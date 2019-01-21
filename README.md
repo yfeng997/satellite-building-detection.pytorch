@@ -46,7 +46,7 @@ After this, open a browser on local server and direct towards `localhost:8888`.
 ## Pre-processed dataset
 A truncated version of Functional Map of the World can be accessed [here](https://drive.google.com/open?id=1sdcxiBlFWmbixkP-gSfXJUlSDNWXcHlR). Notice several building types are removed from original dataset as specified in [params.py](https://github.com/YuansongFeng/satellite-building-detection.pytorch/blob/master/params.py#L28-L92). 
 
-Pre processed image data for wake county satellite images are not open to public, so please open an issue for access. 
+Pre processed image data for wake county satellite images can be accessed [here](https://drive.google.com/file/d/1pEBzcPyIl1O2My8IO-E1nndHb7dTFZXD/view?usp=sharing) but notice these images are not open to public, so please open an issue for access. 
 
 To understand the structure of each dataset, please check `dataset.py`. 
 
@@ -62,4 +62,4 @@ Pretrained models are provided in `/models`.
 [Single Shot Detector](https://arxiv.org/abs/1512.02325)
 
 ## Resources
-[Detailed hands-on understanding of Yolo](https://blog.paperspace.com/how-to-implement-a-yolo-object-detector-in-pytorch/)
+[Detailed hands-on experience with Yolo](https://blog.paperspace.com/how-to-implement-a-yolo-object-detector-in-pytorch/)
