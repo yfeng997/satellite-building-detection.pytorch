@@ -1,5 +1,7 @@
 # satellite-building-detection.pytorch
 
+**THIS REPO IS DEPRECATED. PLEASE REFER TO https://github.com/YuansongFeng/satellite_building_detection.pytorch FOR THE LATEST UPDATE.**
+
 This project is on detecting and classifying buildings through satellite images. Satellite images are inputted in raw form with 3 channels, without building boundary information. The model then runs a [Single Shot Detector](https://arxiv.org/abs/1512.02325) to simultaneously propose potential buildings and classify the proposed region into target classes. For now we only classify buildings into two types: residential and non-residential. 
 
 As another objective of the project, we aim to demonstrate the effectiveness of transfer learning across geometric domains. Specifically, we first train the network on building images from all over the world. This generic dataset comes from [Functional Map of the World(fMoW)](https://arxiv.org/abs/1711.07846). We then fine tune our model based on region-specific building images. In our case, we use Wake County satellite images to prompt the model to learn more detailed features. We test our model performance on the satellite images from the specific region that we fine tune the model upon. 
